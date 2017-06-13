@@ -1,3 +1,12 @@
+'''
+For VAST Challenge 2017 Mini Challenge 1
+Author: GU Qiao, George @ HKUST
+E-mail: georgegu1997@gmail.com
+
+This script reads the csv file given by the challenge, generate the travels and
+routes of from the records. and can print them or write them into a json file
+'''
+
 import csv
 import json
 from datetime import datetime

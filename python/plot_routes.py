@@ -1,3 +1,14 @@
+'''
+For VAST Challenge 2017 Mini Challenge 1
+Author: GU Qiao, George @ HKUST
+E-mail: georgegu1997@gmail.com
+
+This script will plot all the different route of travels, the output will contain
+5 parts: the route depicted by arrow on the real map; the car type distribution;
+the distribution of entry times of the travels; the distribution of the lasting time
+of the travels; and the punchcard of the entry times.
+'''
+
 import json, csv, re
 from pprint import pprint
 from datetime import datetime, timedelta
@@ -13,42 +24,6 @@ import numpy as np
 from classes import *
 from punchcard import *
 
-def read_json(file_name):
-    with open(file_name) as data_file:
-        data = json.load(data_file)
-    return data
-
-def restore_route_instance(route_dict):
-    route = Route()
-    route.type_count = route_dict['type_count']
-    for travel_dict in route_dict['travels']:
-        travel = Travel(travel_dict['car_id'], travel_dict['car_type'])
-        for record_dict in travel_dict['records']:
-            time = datetime(1970, 1, 1) + timedelta(milliseconds=int(record_dict['timestamp']))
-            record = Record(time,record_dict['gate_name'])
-            travel.records.append(record)
-        route.travels.append(travel)
-        if len(route.records) <= 0:
-            route.records = travel.records
-
-def restore_data(data):
-    for route_dict in data:
-        restore_route_instance(route_dict)
-
-def read_positions():
-    gate_positions = {}
-    with open("sensor_position.csv", "rb") as csvfile:
-        spamreader = csv.reader(csvfile, delimiter="\t",quotechar="|")
-        i = 0
-        for row in spamreader:
-            i += 1
-            if i == 1:
-                continue
-            gate_name = row[0]
-            gate_x = int(row[1])
-            gate_y = int(row[2])
-            gate_positions[gate_name] = {'x': gate_x, 'y': gate_y}
-    return gate_positions
 
 def get_type_str(type):
     if type == "1":
@@ -316,10 +291,7 @@ def handle_pattern(pattern, gate_positions):
     draw_distribution_plot(all_travels, p3)
     draw_stayting_time_plot(all_travels, p4)
 
-def flip_y(gate_positions):
-    for k, v in gate_positions.items():
-        v['y'] = 200 - v['y']
-    return gate_positions
+
 
 def get_important_records_of_route(route):
     camping = []
@@ -359,14 +331,6 @@ def gen_name(route):
             name += i
         name += "_"
     return name
-
-def read_all_data():
-    routes_data = read_json('routes.json')
-    restore_data(routes_data)
-    gate_positions = read_positions()
-    gate_positions = flip_y(gate_positions)
-    return routes_data, gate_positions
-
 
 
 def init_pattern_dict():
@@ -439,6 +403,7 @@ def draw_patterns_and_save():
         save_name = "./plot/patterns/"+"camping_"+number+".png"
         plt.savefig(save_name)
         plt.close('all')
+        print "finished:", save_name
 
 def main():
     draw_patterns_and_save()

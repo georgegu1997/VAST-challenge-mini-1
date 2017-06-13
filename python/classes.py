@@ -3,10 +3,10 @@ For VAST Challenge 2017 Mini Challenge 1
 Author: GU Qiao, George @ HKUST
 E-mail: georgegu1997@gmail.com
 
-This script define three classes used in the mini challenge 1 analysis
+This script defines three classes used in the mini challenge 1 analysis
 '''
 
-import json
+import json, csv
 from datetime import datetime, timedelta
 
 epoch = datetime.utcfromtimestamp(0)
@@ -75,7 +75,7 @@ class Travel:
 
     @staticmethod
     def sort_by_entry_time():
-        Travel.all_travels.sort(key = lambda x: x.get_entry_time()) 
+        Travel.all_travels.sort(key = lambda x: x.get_entry_time())
 
     def get_jsonable(self):
         travel = self
@@ -235,3 +235,56 @@ class Route:
             if self.records[i].position != records[i].position:
                 return False
         return True
+
+'''
+functions to restore the data
+'''
+
+def flip_y(gate_positions):
+    for k, v in gate_positions.items():
+        v['y'] = 200 - v['y']
+    return gate_positions
+
+def read_json(file_name):
+    with open(file_name) as data_file:
+        data = json.load(data_file)
+    return data
+
+def restore_route_instance(route_dict):
+    route = Route()
+    route.type_count = route_dict['type_count']
+    for travel_dict in route_dict['travels']:
+        travel = Travel(travel_dict['car_id'], travel_dict['car_type'])
+        for record_dict in travel_dict['records']:
+            time = datetime(1970, 1, 1) + timedelta(milliseconds=int(record_dict['timestamp']))
+            record = Record(time,record_dict['gate_name'])
+            travel.records.append(record)
+        route.travels.append(travel)
+        if len(route.records) <= 0:
+            route.records = travel.records
+
+def restore_data(data):
+    for route_dict in data:
+        restore_route_instance(route_dict)
+
+def read_positions():
+    gate_positions = {}
+    with open("sensor_position.csv", "rb") as csvfile:
+        spamreader = csv.reader(csvfile, delimiter="\t",quotechar="|")
+        i = 0
+        for row in spamreader:
+            i += 1
+            if i == 1:
+                continue
+            gate_name = row[0]
+            gate_x = int(row[1])
+            gate_y = int(row[2])
+            gate_positions[gate_name] = {'x': gate_x, 'y': gate_y}
+    return gate_positions
+
+def read_all_data():
+    routes_data = read_json('routes.json')
+    restore_data(routes_data)
+    gate_positions = read_positions()
+    gate_positions = flip_y(gate_positions)
+    return routes_data, gate_positions
