@@ -1,3 +1,11 @@
+'''
+For VAST Challenge 2017 Mini Challenge 1
+Author: GU Qiao, George @ HKUST
+E-mail: georgegu1997@gmail.com
+
+This script define three classes used in the mini challenge 1 analysis
+'''
+
 import json
 from datetime import datetime, timedelta
 
@@ -8,16 +16,24 @@ def unix_time_millis(dt):
 
 class Record:
     def __init__(self, time, position):
+        '''datetime: storing the timestamp'''
         self.time = time
+        '''string: the name of the sensor'''
         self.position = position
 
 class Travel:
-    #static property of all travel instances
+    '''static property of all travel instances'''
     all_travels = []
+
     def __init__(self, car_id, car_type):
+        '''string: the id of the car'''
         self.id = car_id
+        '''string: the type of the car'''
+        '''please see the get_type_by_number() method'''
         self.type = car_type
+        '''list of Record: the records of this car'''
         self.records = []
+        '''once instantiated, add it to the all_records list'''
         Travel.all_travels.append(self)
 
     @staticmethod
@@ -56,6 +72,10 @@ class Travel:
             travel_json = travel.get_jsonable()
             travels.append(travel_json)
         return travels
+
+    @staticmethod
+    def sort_by_entry_time():
+        Travel.all_travels.sort(key = lambda x: x.get_entry_time()) 
 
     def get_jsonable(self):
         travel = self
@@ -113,6 +133,9 @@ class Travel:
 
     def get_entry_time(self):
         return self.records[0].time
+
+    def get_exit_time(self):
+        return self.records[-1].time
 
 class Route:
     all_routes = []
@@ -177,6 +200,16 @@ class Route:
         for route in Route.all_routes:
             routes.append(route.get_jsonable())
         return routes
+
+    def return_records_for_print(self):
+        string = ""
+        for i in range(len(self.records)):
+            string += self.records[i].position
+            if i != len(self.records) - 1:
+                string += "->"
+            if (i+1) % 8 == 0:
+                string += "\n"
+        return string
 
     def get_jsonable(self):
         route_json = {
