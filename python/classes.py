@@ -9,6 +9,9 @@ This script defines three classes used in the mini challenge 1 analysis
 import json, csv
 from datetime import datetime, timedelta
 
+START_TIME = datetime(year=2015, month=5, day=1)
+END_TIME = datetime(year=2016, month=6, day=1)
+
 epoch = datetime.utcfromtimestamp(0)
 
 def unix_time_millis(dt):
@@ -50,7 +53,9 @@ class Travel:
 
     @staticmethod
     def get_type_by_number(number):
-        if number == "1":
+        if number == "0":
+            return "all type"
+        elif number == "1":
             return "2 axle car (or motoecycle)"
         elif number == "2":
             return "2 axle truck (without pass)"
