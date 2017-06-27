@@ -191,7 +191,7 @@ class MapAnalysis:
         dy = from_position["y"] - to_position["y"]
         return (float(dx**2 + dy**2)) ** (1/2)
 
-    def save_in_json(self, file_name = "route_distance_dict.json"):
+    def save_routes_in_json(self, file_name = "route_distance_dict.json"):
         distance_dict = {}
         for from_sensor, from_position in self.sensor_position.items():
             distance_dict[from_sensor] = {}
@@ -206,6 +206,14 @@ class MapAnalysis:
         with open(file_name, 'wb') as f:
             f.write(json.dumps(distance_dict, ensure_ascii=False))
 
+    def save_points_in_json(self, file_name = "point_list.json"):
+        points_list = []
+        print len(self.roads)
+        for point in self.roads:
+            points_list.append(point)
+        with open(file_name, 'wb') as f:
+            f.write(json.dumps(points_list, ensure_ascii=False))
+
 
 def main():
     '''initialize the class'''
@@ -218,7 +226,8 @@ def main():
     print map_analysis.get_distance_smart("camping1", "general-gate0")
     print "ranger-stop3 -> gate3:", map_analysis.get_distance_simple("ranger-stop3", "gate3"),
     print map_analysis.get_distance_smart("ranger-stop3", "gate3")
-    map_analysis.save_in_json()
+    #map_analysis.save_routes_in_json()
+    map_analysis.save_points_in_json()
 
     '''should raise exception'''
     #print map_analysis.get_distance_simple("camping1", "entrance0")

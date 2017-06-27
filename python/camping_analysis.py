@@ -10,7 +10,7 @@ def find_all_camping_route():
     camping_routes = []
     for route in Route.all_routes:
         camping, entrance, gate, ranger_base = get_important_records_of_route(route)
-        if len(camping) == 2 and not ranger_base:
+        if len(camping) == 2 and len(ranger_base) == 0:
             camping_routes.append(route)
     return camping_routes
 

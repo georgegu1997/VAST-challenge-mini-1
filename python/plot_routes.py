@@ -297,7 +297,7 @@ def get_important_records_of_route(route):
     camping = []
     entrance = []
     gate = []
-    ranger_base = False
+    ranger_base = []
     for r in route.records:
         record = str(r.position)
         if re.match(r"camping", record):
@@ -305,7 +305,7 @@ def get_important_records_of_route(route):
         elif re.match(r"entrance", record):
             entrance.append(record[-1])
         elif re.match(r"ranger-base", record):
-            ranger_base = True
+            ranger_base.append("ranger-base")
         elif re.match(r"gate", record):
             gate.append(record[-1])
     return camping, entrance, gate, ranger_base
@@ -313,7 +313,7 @@ def get_important_records_of_route(route):
 def gen_name(route):
     camping, entrance, gate, ranger_base = get_important_records_of_route(route)
     name = ""
-    if ranger_base:
+    if len(ranger_base) != 0:
         name += "R_"
     if len(gate) > 0:
         name += "G"
@@ -357,7 +357,7 @@ def sort_route_to_pattern(patterns, routes):
     for i in range(len(routes)):
         route = routes[i]
         camping, entrance, gate, ranger_base = get_important_records_of_route(route)
-        if ranger_base == True:
+        if len(ranger_base) != 0:
             patterns["ranger"].append(route)
         else:
             if len(camping) > 0:

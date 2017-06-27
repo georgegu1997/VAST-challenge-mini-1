@@ -6,8 +6,9 @@ E-mail: georgegu1997@gmail.com
 This script defines three classes used in the mini challenge 1 analysis
 '''
 
-import json, csv
+import json, csv, re
 from datetime import datetime, timedelta
+from plot_routes import get_important_records_of_route
 
 START_TIME = datetime(year=2015, month=5, day=1)
 END_TIME = datetime(year=2016, month=6, day=1)
@@ -146,12 +147,22 @@ class Route:
     all_routes = []
 
     def __init__(self, travel = None):
+        ''' description: string that describe the essential gate on the route'''
+        self.description = ""
+
+        ''' records: list of string store the gate past in order'''
+        #assert(travel != None)
         if travel != None:
             self.records = travel.records
+            self.generate_description()
         else:
             self.records = []
+
+        ''' travels: list of Travel that belong to this Route'''
         self.travels = []
         Route.all_routes.append(self)
+
+        ''' type_count: dict storing the count of different type of the vehicles'''
         self.type_count = {
         "1":0,
         "2":0,
@@ -206,6 +217,22 @@ class Route:
             routes.append(route.get_jsonable())
         return routes
 
+    def generate_description(self):
+        description = "->"
+        ranger = False
+        for record in self.records:
+            if re.match(r"camping", record.position):
+                description += record.position + "->"
+            elif re.match(r"entrance", record.position):
+                description += record.position + "->"
+            elif re.match(r"ranger-base", record.position):
+                ranger = True
+                description += record.position + "->"
+            elif re.match(r"ranger-stop", record.position):
+                if ranger:
+                    description += record.position + "->"
+        self.description = description
+
     def return_records_for_print(self):
         string = ""
         for i in range(len(self.records)):
@@ -221,7 +248,8 @@ class Route:
         "records": [],
         "type_count": self.type_count,
         "total_count": len(self.travels),
-        "travels": []
+        "travels": [],
+        "description": self.description
         }
         for record in self.travels[0].records:
             route_json["records"].append(record.position)
@@ -240,6 +268,102 @@ class Route:
             if self.records[i].position != records[i].position:
                 return False
         return True
+
+class Pattern:
+    all_patterns = {}
+    pattern_names = [
+        "PassingBy",
+        "Ranger",
+        "Camping",
+        "Incomplete",
+        "SameEntrance",
+        "Bug",
+        "TwiceCamping",
+        "4AxlesTruck",
+        "Special"
+    ]
+
+    def __init__(self, name):
+        '''name: string describing the basic feature of the pattern'''
+        self.name = name
+        '''routes: list of Routes that belong to this pattern'''
+        self.routes = []
+
+    @staticmethod
+    def init_all_patterns():
+        for name in Pattern.pattern_names:
+            Pattern.all_patterns[name] = Pattern(name)
+
+    @staticmethod
+    def sort_routes_into_pattern(routes):
+        for route in routes:
+            camping, entrance, gate, ranger_base = get_important_records_of_route(route)
+            #'''from ranger base'''
+            if len(ranger_base) != 0:
+                Pattern.all_patterns["Ranger"].add_route(route)
+                continue
+            #''' not from ranger base but can pass gate'''
+            elif len(gate) != 0:
+                Pattern.all_patterns["Special"].add_route(route)
+                continue
+            #''' only has one record in any of the entrances'''
+            elif len(entrance) == 1:
+                Pattern.all_patterns["Incomplete"].add_route(route)
+                continue
+            #''' has 2 records of entrances'''
+            elif len(entrance) == 2:
+                #'''camping'''
+                if len(camping) == 0:
+                    #'''go back and exit by the same entrance'''
+                    if entrance[0] == entrance[1]:
+                        Pattern.all_patterns["SameEntrance"].add_route(route)
+                        continue
+                    #'''not normal passingby pasttern'''
+                    elif len(route.travels) <= 10:
+                        Pattern.all_patterns["Special"].add_route(route)
+                        continue
+                    #'''normal passingby pasttern'''
+                    else:
+                        Pattern.all_patterns["PassingBy"].add_route(route)
+                        continue
+                #'''normal camping pattern'''
+                elif len(camping) == 2:
+                    Pattern.all_patterns["Camping"].add_route(route)
+                    continue
+                elif len(camping) == 4:
+                    Pattern.all_patterns["TwiceCamping"].add_route(route)
+                    continue
+                else:
+                    Pattern.all_patterns["Special"].add_route(route)
+            #'''Passing entrance more than 2 times'''
+            else:
+                #'''activities of 4 axles trucks'''
+                if route.type_count["4"] != 0:
+                    Pattern.all_patterns["4AxlesTruck"].add_route(route)
+                    continue
+                #'''correspond the bug in the systems'''
+                else:
+                    Pattern.all_patterns["Bug"].add_route(route)
+                    continue
+
+    @staticmethod
+    def get_jsonable_all():
+        patterns = []
+        for name, pattern in Pattern.all_patterns.items():
+            patterns.append(pattern.get_jsonable())
+        return patterns
+
+    def add_route(self, route):
+        self.routes.append(route)
+
+    def get_jsonable(self):
+        pattern = {
+            "name": self.name,
+            "routes": []
+        }
+        for route in self.routes:
+            pattern["routes"].append(route.get_jsonable())
+        return pattern
 
 '''
 functions to restore the data
@@ -267,6 +391,7 @@ def restore_route_instance(route_dict):
         route.travels.append(travel)
         if len(route.records) <= 0:
             route.records = travel.records
+            route.generate_description()
 
 def restore_data(data):
     for route_dict in data:
